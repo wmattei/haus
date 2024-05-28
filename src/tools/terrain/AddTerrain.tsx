@@ -1,29 +1,44 @@
 import { fabric } from "fabric";
 import { Icon } from "solid-heroicons";
 import { square_2Stack } from "solid-heroicons/outline";
-import { createSignal } from "solid-js";
+import { createSignal, createUniqueId, onCleanup, onMount } from "solid-js";
 import { useSceneContext } from "../../2d/Scene";
-import { metersToPixels } from "../../2d/utils/dimensions";
-import { Vertex } from "../../vertex";
+import { cmToPx } from "../../utils/dimensions";
 import { useFloorPlanContext } from "../../floorplan/FloorplanProvider";
 import { Terrain } from "../../floorplan/terrain";
-import { Edge } from "../../edge";
+import { Vertex } from "../../vertex";
+import { useGuidanceContext } from "../../guidance/GuidanceContext";
+
+const width = 1200;
+const height = 2500;
 
 export function AddTerrain() {
   const [object, setObject] = createSignal<fabric.Polygon | null>(null);
 
   const { scene } = useSceneContext()!;
   const { addTerrain } = useFloorPlanContext();
+  const { setMessage } = useGuidanceContext()!;
+
+  onMount(() => {
+    document.addEventListener("keypress", onPressKey);
+  });
+
+  onCleanup(() => {
+    document.removeEventListener("keypress", onPressKey);
+  });
+
+  function onPressKey(event: KeyboardEvent) {
+    if (event.key.toLowerCase() === "t") {
+      createRectangularTerrain({ clientX: 0, clientY: 0 } as MouseEvent);
+    }
+  }
 
   function createRectangularTerrain(e: MouseEvent) {
-    const width = metersToPixels(12);
-    const height = metersToPixels(25);
-
     const center = scene()!.getPointer(e);
 
     const rectangle = new fabric.Rect({
-      width,
-      height,
+      width: cmToPx(width),
+      height: cmToPx(height),
       left: center.x - width / 2,
       top: center.y - height / 2,
     });
@@ -32,6 +47,7 @@ export function AddTerrain() {
   }
 
   function drawTerrain(vertices: Vertex[]) {
+    setMessage("Click to confirm. Press Escape to cancel");
     const points = vertices.map((vertex) => {
       return new fabric.Point(vertex.x, vertex.y);
     });
@@ -45,6 +61,16 @@ export function AddTerrain() {
         selectable: false,
       })
     );
+
+    document.addEventListener("keypress", (e) => {
+      if (e.key === "Escape") {
+        scene().remove(object()!);
+        scene().off("mouse:move", onMouseMove);
+        scene().off("mouse:up", onMouseUp);
+
+        setMessage("");
+      }
+    });
 
     scene().add(object()!);
 
@@ -66,27 +92,18 @@ export function AddTerrain() {
 
   function onMouseUp() {
     scene()!.off("mouse:move", onMouseMove);
-    object()!.selectable = true;
-    object()!.hasControls = true;
-
-    const image = new Image();
-    image.src = "src/assets/textures/grass.png";
-    image.onload = () => {
-      const pattern = new fabric.Pattern({
-        source: image,
-        repeat: "repeat",
-      });
-      object()!.set("fill", pattern);
-      scene()!.renderAll();
-    };
 
     const center = object()!.getCenterPoint();
-    const width = object()!.width!;
-    const height = object()!.height!;
 
-    addTerrain(new Terrain(width, height, new Vertex(center.x, center.y)));
+    const terrainId = fabric.util.getRandomInt(0, 1000000).toString();
+    addTerrain(
+      new Terrain(terrainId, width, height, new Vertex(center.x, center.y))
+    );
+
+    scene().remove(object()!);
 
     scene()!.off("mouse:up", onMouseUp);
+    setMessage("");
   }
 
   return (

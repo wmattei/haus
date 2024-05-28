@@ -1,7 +1,6 @@
 import { createSignal, onMount } from "solid-js";
 import { ZoomInput } from "../components/ZoomInput";
 import { useSceneContext } from "./Scene";
-import { useFloorPlanContext } from "../floorplan/FloorplanProvider";
 
 const MAX_SCALE = 15;
 const MIN_SCALE = 0.05;
@@ -10,7 +9,6 @@ const INITIAL_SCALE = 0.5;
 export function ZoomControl2d() {
   const { scene } = useSceneContext()!;
   const [zoom, setZoom] = createSignal(1);
-  const { viewMode } = useFloorPlanContext();
 
   onMount(() => {
     const currentScene = scene();
@@ -68,7 +66,7 @@ export function ZoomControl2d() {
 
   return (
     <ZoomInput
-      visible={viewMode() === "2d"}
+      visible={false} // TODO
       zoom={zoom}
       onIncrement={zoom() <= MAX_SCALE ? increment : undefined}
       onDecrement={zoom() >= MAX_SCALE ? decrement : undefined}

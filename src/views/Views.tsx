@@ -11,7 +11,6 @@ export function Views() {
     <>
       <Scene2D height={innerHeight} width={innerWidth} name="BaseScene">
         {viewMode() === "2d" && <LeftSideBar />}
-        <ZoomControl2d />
       </Scene2D>
       <Scene3D>
         <ZoomControl3d />

@@ -1,4 +1,4 @@
-import { Accessor, createEffect } from "solid-js";
+import { Accessor } from "solid-js";
 
 type Props = {
   zoom: Accessor<number>;
@@ -21,7 +21,7 @@ export function ZoomInput(props: Props) {
         >
           -
         </button>
-        <span class="text-center w-12">{(props.zoom() * 100).toFixed()}%</span>
+        <span class="text-center w-12">{(props.zoom()).toFixed(2)}m</span>
         <button
           disabled={!props.onIncrement}
           onClick={props.onIncrement}

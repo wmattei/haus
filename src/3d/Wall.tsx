@@ -1,6 +1,7 @@
 import { Wall } from "../floorplan/wall";
 import * as THREE from "three";
 import { useScene3DContext } from "./Scene";
+import { cmToPx, pxToCm } from "../utils/dimensions";
 
 type Props = {
   wall: Wall;
@@ -9,24 +10,22 @@ type Props = {
 export function WallObject({ wall }: Props) {
   const { scene } = useScene3DContext()!;
 
-  const width = wall.edge.end.x - wall.edge.start.x;
-
   const material = new THREE.MeshPhongMaterial({ color: 0xffffff });
   const geometry = new THREE.BoxGeometry(
-    width / 100,
-    wall.height / 100,
+    Math.abs(pxToCm(wall.width)) / 100,
+    wall.height / 100, 
     wall.thickness / 100
   );
   const cube = new THREE.Mesh(geometry, material);
-
   cube.castShadow = true;
-  cube.position.set(
-    wall.edge.start.x / 100 + width / 2 / 100,
-    wall.height / 100 / 2,
-    wall.edge.start.y / 100 - width / 2 / 100
-  );
+  cube.position.setX(pxToCm((wall.center.x) / 100));
+  cube.position.setY(wall.height / 100 / 2);
+  cube.position.setZ(pxToCm((wall.center.y) / 100));
+  cube.rotateY(wall.angle);
+  
 
-  cube.rotateY(wall.getAngle());
+  // const box = new THREE.BoxHelper(cube, 0xffff00);
+  // scene.add(box);
 
   scene.add(cube);
   return null;

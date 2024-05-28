@@ -6,7 +6,7 @@ import { useGuidanceContext } from "../../guidance/GuidanceContext";
 import { Vertex } from "../../vertex";
 import { Icon } from "solid-heroicons";
 import { homeModern } from "solid-heroicons/outline";
-import { metersToPixels } from "../../2d/utils/dimensions";
+import { cmToPx } from "../../utils/dimensions";
 import { useFloorPlanContext } from "../../floorplan/FloorplanProvider";
 import { Wall } from "../../floorplan/wall";
 
@@ -15,7 +15,7 @@ export function AddWall() {
   const { setMessage } = useGuidanceContext()!;
   const { addWalls } = useFloorPlanContext();
 
-  const wallThickness = metersToPixels(0.1);
+  const wallThickness = cmToPx(10);
 
   const [lastPoint, setLastPoint] = createSignal<Vertex | null>(null);
   const [currentLine, setCurrentLine] = createSignal<Line | null>(null);
@@ -54,15 +54,18 @@ export function AddWall() {
       scene().remove(currentLine()!);
       setCurrentLine(null);
       setLastPoint(null);
-      scene().renderAll();
-      object.selectable = true;
-      object.evented = true;
 
       const lines = object.getObjects() as Line[];
-      const edges = lines.map((line) => new Wall({
-        start: new Vertex(line.x1!, line.y1!),
-        end: new Vertex(line.x2!, line.y2!),
-      }));
+      const edges = lines.map(
+        (line) =>
+          new Wall({
+            start: new Vertex(line.x1!, line.y1!),
+            end: new Vertex(line.x2!, line.y2!),
+          })
+      );
+
+      scene().renderAll();
+      scene().remove(object);
 
       addWalls(edges);
     }
