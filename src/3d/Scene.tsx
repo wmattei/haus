@@ -1,7 +1,9 @@
 import {
   Accessor,
+  For,
   JSX,
   createContext,
+  createEffect,
   createSignal,
   onMount,
   useContext,
@@ -131,12 +133,10 @@ export function Scene3D(props: Props) {
 
   return (
     <Scene3DContext.Provider value={{ scene, camera, renderer, onUpdate }}>
-      {schema.walls.map((wall) => (
-        <WallObject wall={wall} />
-      ))}
-      {schema.terrains.map((terrain) => (
-        <TerrainObject terrain={terrain} />
-      ))}
+      <For each={schema.walls}>{(wall) => <WallObject wall={wall} />}</For>
+      <For each={schema.terrains}>
+        {(terrain) => <TerrainObject terrain={terrain} />}
+      </For>
       {props.children}
       <canvas
         style={{

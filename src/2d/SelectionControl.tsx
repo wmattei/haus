@@ -1,6 +1,6 @@
 import { createSignal, onMount } from "solid-js";
-import { useSceneContext } from "./Scene";
 import { Vertex } from "../vertex";
+import { useSceneContext } from "./Scene";
 
 export function SelectionControl() {
   const { scene } = useSceneContext()!;
@@ -33,7 +33,15 @@ export function SelectionControl() {
 
     c.on("mouse:click", (e) => {
       if (!e.target) return;
-      scene()?.setActiveObject(e.target);
+      c.setActiveObject(e.target);
+    });
+
+    document.addEventListener("keypress", (e) => {
+      if (e.key === "Escape") {
+        c.discardActiveObject();
+
+        c.renderAll();
+      }
     });
   });
   return null;

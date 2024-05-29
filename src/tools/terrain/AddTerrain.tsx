@@ -35,7 +35,6 @@ export function AddTerrain() {
 
   function createRectangularTerrain(e: MouseEvent) {
     const center = scene()!.getPointer(e);
-
     const rectangle = new fabric.Rect({
       width: cmToPx(width),
       height: cmToPx(height),

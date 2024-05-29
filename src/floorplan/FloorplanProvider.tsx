@@ -7,10 +7,15 @@ import {
   onMount,
   useContext,
 } from "solid-js";
-import { createStore } from "solid-js/store";
+import { Part, createStore } from "solid-js/store";
 import { Schema } from "./schema";
 import { Terrain } from "./terrain";
 import { Wall } from "./wall";
+
+type NonFunctionPropertyNames<T> = {
+  [K in keyof T]: T[K] extends Function ? never : K;
+}[keyof T];
+type NonFunctionProperties<T> = Pick<T, NonFunctionPropertyNames<T>>;
 
 type FloorPlanContext = {
   viewMode: Accessor<"3d" | "2d">;
@@ -21,6 +26,7 @@ type FloorPlanContext = {
   addWalls: (walls: Wall[]) => void;
   addTerrain: (terrain: Terrain) => void;
   updateTerrain: (id: string, data: Partial<Omit<Terrain, "id">>) => void;
+  deleteTerrain: (id: string) => void;
 };
 
 const FloorPlanContext = createContext<FloorPlanContext>({
@@ -38,7 +44,9 @@ export function FloorPlanProvider(props: FloorPlanContextProps) {
   onMount(() => {
     const saved = localStorage.getItem("floorPlan");
     if (saved) {
-      setSchema(Schema.fromJson(saved));
+      const loadedSchema = Schema.fromJson(saved);
+      setSchema(loadedSchema);
+      setSchema("terrains", loadedSchema.terrains);
     }
 
     const savedViewMode = localStorage.getItem("viewMode");
@@ -49,25 +57,36 @@ export function FloorPlanProvider(props: FloorPlanContextProps) {
 
   function addWalls(walls: Wall[]) {
     setSchema("walls", (existingWalls) => [...existingWalls, ...walls]);
+    saveState();
   }
 
   function addTerrain(terrain: Terrain) {
     setSchema("terrains", (terrains) => [...terrains, terrain]);
+    saveState();
   }
 
-  function updateTerrain(id: string, data: Partial<Omit<Terrain, "id">>) {
+  function updateTerrain(
+    id: string,
+    data: Partial<NonFunctionProperties<Terrain>>
+  ) {
+    const index = schema.findTerrainIndex(id);
+    const newTerrain = { ...schema.terrains[index], ...data };
+    Object.setPrototypeOf(newTerrain, Terrain.prototype);
+    setSchema("terrains", index, newTerrain);
+    saveState();
+  }
+
+  function deleteTerrain(id: string) {
     setSchema("terrains", (currentTerrains) =>
-      currentTerrains.map((t) =>
-        t.id === id ? ({ ...t, ...data } as Terrain) : t
-      )
+      currentTerrains.filter((t) => t.id !== id)
     );
+    saveState();
   }
 
-  createEffect(() => {
-    console.info("Saving schema");
+  function saveState() {
     const json = JSON.stringify(schema);
     localStorage.setItem("floorPlan", json);
-  });
+  }
 
   createEffect(() => {
     localStorage.setItem("viewMode", viewMode());
@@ -82,6 +101,7 @@ export function FloorPlanProvider(props: FloorPlanContextProps) {
         addWalls,
         addTerrain,
         updateTerrain,
+        deleteTerrain,
       }}
     >
       {props.children}

@@ -17,6 +17,7 @@ import { Wall2dObject } from "./Wall";
 import { ZoomControl2d } from "./ZoomControl";
 import { SelectionControl } from "./SelectionControl";
 import { ObjectType } from "../floorplan/objectType";
+import { pxToCm } from "../utils/dimensions";
 
 type SceneContext = {
   scene: Accessor<fabric.Canvas>;
@@ -51,17 +52,6 @@ export function Scene2D(props: Scene2DProps) {
     });
 
     setScene(c);
-    c.on("object:modified", (e) => {
-      if (e.target?.data.type === ObjectType.Terrain && e.target?.data.id) {
-        updateTerrain(e.target.data.id, {
-          center: {
-            x: e.target.left! + e.target.width! / 2,
-            y: e.target.top! + e.target.height! / 2,
-          },
-        });
-      }
-      // c.discardActiveObject();
-    });
   });
 
   createEffect(() => {
@@ -81,9 +71,7 @@ export function Scene2D(props: Scene2DProps) {
       <For each={schema.terrains}>
         {(terrain) => <Terrain2dObject terrain={terrain} />}
       </For>
-      {schema.walls.map((wall) => (
-        <Wall2dObject wall={wall} />
-      ))}
+      <For each={schema.walls}>{(wall) => <Wall2dObject wall={wall} />}</For>
       {props.children}
       <canvas
         ref={(el) => {
