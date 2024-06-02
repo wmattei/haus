@@ -1,12 +1,12 @@
 import { fabric } from "fabric";
 import { For, Show, createEffect, createSignal, onCleanup } from "solid-js";
-import { Popover } from "../components/Popover";
 import { Edge, getEdgeCenter, getEdgeSize } from "../edge";
 import { useFloorPlanContext } from "../floorplan/FloorplanProvider";
 import { ObjectType } from "../floorplan/objectType";
 import { Terrain } from "../floorplan/terrain";
 import { cmToPx, pointsToEdges, pxToCm } from "../utils/dimensions";
 import { useSceneContext } from "./Scene";
+import { EdgeSizeControl } from "./components/EdgeSizeControl";
 
 type TerrainEdgeDimensionProps = {
   edge: Edge;
@@ -15,6 +15,10 @@ type TerrainEdgeDimensionProps = {
   visible?: boolean;
   onApplyPrimary: (value: number) => void;
   onApplySecondary: (value: number) => void;
+  primaryLabel: string;
+  secondaryLabel: string;
+
+  direction: "horizontal" | "vertical";
 };
 
 function TerrainEdgeDimension(props: TerrainEdgeDimensionProps) {
@@ -76,22 +80,24 @@ function TerrainEdgeDimension(props: TerrainEdgeDimensionProps) {
   });
 
   text.on("selected", (e) => {
+    const offsetX = props.direction === "horizontal" ? 120 : 5;
+    const offsetY = props.direction === "horizontal" ? 5 : 120;
     setPosition({
-      x: e.target?.getBoundingRect().left! - 5,
-      y: e.target?.getBoundingRect().top! - 5,
+      x: e.target?.getBoundingRect().left! - offsetX,
+      y: e.target?.getBoundingRect().top! - offsetY,
     });
     setIsSelected(true);
 
     scene().on("zoom", () => {
       setPosition({
-        x: e.target?.getBoundingRect().left! - 5,
-        y: e.target?.getBoundingRect().top! - 5,
+        x: e.target?.getBoundingRect().left! - offsetX,
+        y: e.target?.getBoundingRect().top! - offsetY,
       });
     });
     scene().on("move", () => {
       setPosition({
-        x: e.target?.getBoundingRect().left! - 5,
-        y: e.target?.getBoundingRect().top! - 5,
+        x: e.target?.getBoundingRect().left! - offsetX,
+        y: e.target?.getBoundingRect().top! - offsetY,
       });
     });
   });
@@ -117,32 +123,16 @@ function TerrainEdgeDimension(props: TerrainEdgeDimensionProps) {
 
   return (
     <Show when={isSelected()}>
-      <Popover position={position()}>
-        <div class="flex flex-col space-y-2 items-center p-2">
-          <button
-            type="button"
-            class="text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800"
-            onClick={() => props.onApplyPrimary(value())}
-          >
-            Apply Above
-          </button>
-
-          <input
-            type="number"
-            class="w-32 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-            autofocus
-            value={value()}
-            onChange={(e) => setValue(+e.target.value)}
-          ></input>
-          <button
-            onClick={() => props.onApplySecondary(value())}
-            type="button"
-            class="py-2.5 px-5 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-primary-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
-          >
-            Apply Below
-          </button>
-        </div>
-      </Popover>
+      <EdgeSizeControl
+        direction={props.direction}
+        onApplyPrimary={() => props.onApplyPrimary(value())}
+        onApplySecondary={() => props.onApplySecondary(value())}
+        primaryLabel={props.primaryLabel}
+        secondaryLabel={props.secondaryLabel}
+        position={position()}
+        setValue={setValue}
+        value={value()}
+      />
     </Show>
   );
 }
@@ -240,6 +230,7 @@ export function Terrain2dObject(props: Terrain2dObjectProps) {
 
   createEffect(() => {
     props.terrain.center.x;
+    props.terrain.center.y;
     props.terrain.height;
     props.terrain.width;
     const edges = pointsToEdges(rectangle.getCoords(true, true));
@@ -308,6 +299,19 @@ export function Terrain2dObject(props: Terrain2dObjectProps) {
               });
               scene().renderAll();
             };
+            const primaryLabel = {
+              0: "Apply Left",
+              1: "Apply Above",
+              2: "Apply Left",
+              3: "Apply Above",
+            }[index()];
+
+            const secondaryLabel = {
+              0: "Apply Right",
+              1: "Apply Below",
+              2: "Apply Right",
+              3: "Apply Below",
+            }[index()];
 
             return (
               <TerrainEdgeDimension
@@ -317,6 +321,11 @@ export function Terrain2dObject(props: Terrain2dObjectProps) {
                 leftPadding={leftPadding}
                 onApplyPrimary={onApplyPrimary}
                 onApplySecondary={onApplySecondary}
+                primaryLabel={primaryLabel!}
+                secondaryLabel={secondaryLabel!}
+                direction={
+                  index() === 0 || index() === 2 ? "horizontal" : "vertical"
+                }
               />
             );
           }}
