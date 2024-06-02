@@ -1,13 +1,13 @@
 import { fabric } from "fabric";
 import { Line } from "fabric/fabric-impl";
-import { createSignal, onMount } from "solid-js";
-import { useSceneContext } from "../../2d/Scene";
-import { useGuidanceContext } from "../../guidance/GuidanceContext";
-import { Vertex } from "../../vertex";
 import { Icon } from "solid-heroicons";
 import { homeModern } from "solid-heroicons/outline";
-import { cmToPx } from "../../utils/dimensions";
+import { createSignal } from "solid-js";
+import { useSceneContext } from "../../2d/Scene";
 import { useFloorPlanContext } from "../../floorplan/FloorplanProvider";
+import { useGuidanceContext } from "../../guidance/GuidanceContext";
+import { cmToPx } from "../../utils/dimensions";
+import { Vertex } from "../../vertex";
 import { Wall } from "../../floorplan/wall";
 
 export function AddWall() {
@@ -56,13 +56,14 @@ export function AddWall() {
       setLastPoint(null);
 
       const lines = object.getObjects() as Line[];
-      const edges = lines.map(
-        (line) =>
-          new Wall({
-            start: new Vertex(line.x1!, line.y1!),
-            end: new Vertex(line.x2!, line.y2!),
-          })
-      );
+      const edges: Wall[] = lines.map((line) => ({
+        edge: {
+          start: { x: line.x1!, y: line.y1! },
+          end: { x: line.x2!, y: line.y2! },
+        },
+        height: 230,
+        thickness: 10,
+      }));
 
       scene().renderAll();
       scene().remove(object);
@@ -93,7 +94,10 @@ export function AddWall() {
   }
 
   function snap() {
-    const currentPoint = new Vertex(currentLine()!.x2!, currentLine()!.y2!);
+    const currentPoint: Vertex = {
+      x: currentLine()!.x2!,
+      y: currentLine()!.y2!,
+    };
 
     const deltaX = currentPoint.x - lastPoint()!.x;
     if (Math.abs(deltaX) < 10) {
@@ -127,7 +131,7 @@ export function AddWall() {
   function onMouseUp(e: fabric.IEvent<MouseEvent>) {
     const pointer = scene()!.getPointer(e.e);
 
-    setLastPoint(new Vertex(pointer.x, pointer.y));
+    setLastPoint(pointer);
 
     if (currentLine()) {
       object.addWithUpdate(currentLine()!);

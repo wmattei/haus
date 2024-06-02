@@ -1,22 +1,31 @@
 import { fabric } from "fabric";
-import { Index, Show, createSignal, onCleanup } from "solid-js";
-import { Edge } from "../edge";
+import { For, Show, createEffect, createSignal, onCleanup } from "solid-js";
+import { Popover } from "../components/Popover";
+import { Edge, getEdgeCenter, getEdgeSize } from "../edge";
 import { useFloorPlanContext } from "../floorplan/FloorplanProvider";
 import { ObjectType } from "../floorplan/objectType";
 import { Terrain } from "../floorplan/terrain";
-import { pointsToEdges, pxToCm } from "../utils/dimensions";
+import { cmToPx, pointsToEdges, pxToCm } from "../utils/dimensions";
 import { useSceneContext } from "./Scene";
 
 type TerrainEdgeDimensionProps = {
   edge: Edge;
   topPadding?: number;
   leftPadding?: number;
+  visible?: boolean;
+  onApplyPrimary: (value: number) => void;
+  onApplySecondary: (value: number) => void;
 };
 
 function TerrainEdgeDimension(props: TerrainEdgeDimensionProps) {
   const { scene } = useSceneContext()!;
+  const [isSelected, setIsSelected] = createSignal(false);
+  const [value, setValue] = createSignal(
+    pxToCm(Math.ceil(getEdgeSize(props.edge)))
+  );
+  const [position, setPosition] = createSignal({ x: 0, y: 0 });
 
-  const content = `${Math.ceil(props.edge.size)} cm`;
+  const content = `${value()} cm`;
 
   const width = content.length * 10 + 20;
   const height = 42;
@@ -42,41 +51,100 @@ function TerrainEdgeDimension(props: TerrainEdgeDimensionProps) {
       topPadding = topPadding - height;
     }
   }
-
-  const rectangle = new fabric.Rect({
-    left: props.edge.center.x + leftPadding,
-    top: props.edge.center.y + topPadding,
-    width: width,
-    height: height,
-    stroke: "black",
-    fill: "white",
-    selectable: false,
-    evented: false,
-  });
+  const edgeCenter = getEdgeCenter(props.edge);
 
   const text = new fabric.Text(content, {
-    left: rectangle.left! + 10,
-    top: rectangle.top! + 10,
-    selectable: false,
-    evented: false,
-    fill: "black",
+    left: edgeCenter.x + leftPadding,
+    top: edgeCenter.y + topPadding,
     fontSize: 20,
+    hasBorders: false,
+    hasControls: false,
+    visible: false,
   });
 
-  const group = new fabric.Group([rectangle, text], {
+  const box = new fabric.Rect({
+    width: text.getBoundingRect(true).width,
+    height: text.getBoundingRect(true).height,
+    left: text.getBoundingRect(true).left,
+    top: text.getBoundingRect(true).top,
+    fill: "white",
+    stroke: "black",
+    strokeWidth: 1,
     selectable: false,
     evented: false,
+    visible: false,
   });
 
-  scene()!.add(group);
+  text.on("selected", (e) => {
+    setPosition({
+      x: e.target?.getBoundingRect().left! - 5,
+      y: e.target?.getBoundingRect().top! - 5,
+    });
+    setIsSelected(true);
+
+    scene().on("zoom", () => {
+      setPosition({
+        x: e.target?.getBoundingRect().left! - 5,
+        y: e.target?.getBoundingRect().top! - 5,
+      });
+    });
+    scene().on("move", () => {
+      setPosition({
+        x: e.target?.getBoundingRect().left! - 5,
+        y: e.target?.getBoundingRect().top! - 5,
+      });
+    });
+  });
+
+  text.on("deselected", (e) => {
+    setIsSelected(false);
+  });
+
+  createEffect(() => {
+    text.visible = props.visible || isSelected();
+    box.visible = props.visible || isSelected();
+  });
+
+  scene()!.add(box);
+  scene()!.add(text);
   scene()!.renderAll();
 
   onCleanup(() => {
-    scene()!.remove(group);
+    scene()!.remove(text);
+    scene()!.remove(box);
     scene()!.renderAll();
   });
 
-  return null;
+  return (
+    <Show when={isSelected()}>
+      <Popover position={position()}>
+        <div class="flex flex-col space-y-2 items-center p-2">
+          <button
+            type="button"
+            class="text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800"
+            onClick={() => props.onApplyPrimary(value())}
+          >
+            Apply Above
+          </button>
+
+          <input
+            type="number"
+            class="w-32 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+            autofocus
+            value={value()}
+            onChange={(e) => setValue(+e.target.value)}
+          ></input>
+          <button
+            onClick={() => props.onApplySecondary(value())}
+            type="button"
+            class="py-2.5 px-5 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-primary-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
+          >
+            Apply Below
+          </button>
+        </div>
+      </Popover>
+    </Show>
+  );
 }
 
 type Terrain2dObjectProps = {
@@ -88,19 +156,33 @@ export function Terrain2dObject(props: Terrain2dObjectProps) {
   const { deleteTerrain, updateTerrain } = useFloorPlanContext();
   const [isSelected, setIsSelected] = createSignal(false);
   const [isMoving, setIsMoving] = createSignal(false);
+  const [edges, setEdges] = createSignal<Edge[]>([]);
 
   document.addEventListener("keypress", onKeyPress);
   const rectangle = new fabric.Rect({
-    width: props.terrain.widthPx,
-    height: props.terrain.heightPx,
-    left: props.terrain.center.x - props.terrain.widthPx / 2,
-    top: props.terrain.center.y - props.terrain.heightPx / 2,
+    width: cmToPx(props.terrain.width),
+    height: cmToPx(props.terrain.height),
+    left: props.terrain.center.x - cmToPx(props.terrain.width) / 2,
+    top: props.terrain.center.y - cmToPx(props.terrain.height) / 2,
     selectable: false,
     data: {
       id: props.terrain.id,
       type: ObjectType.Terrain,
     },
+    transparentCorners: false,
+    lockSkewingX: true,
+    lockSkewingY: true,
   });
+
+  rectangle.setControlsVisibility({
+    tl: false,
+    tr: false,
+    br: false,
+    bl: false,
+    mtr: false,
+  });
+
+  setEdges(pointsToEdges(rectangle.getCoords(true)));
 
   rectangle.on("modified", (e) => {
     updateTerrain(e.target!.data.id, {
@@ -111,6 +193,10 @@ export function Terrain2dObject(props: Terrain2dObjectProps) {
       width: pxToCm(e.target!.getScaledWidth() - 1),
       height: pxToCm(e.target!.getScaledHeight() - 1),
     });
+  });
+
+  rectangle.on("scaling", (e) => {
+    setEdges(pointsToEdges(rectangle.getCoords(true, true)));
   });
 
   rectangle.on("selected", (e) => {
@@ -152,6 +238,14 @@ export function Terrain2dObject(props: Terrain2dObjectProps) {
     }
   }
 
+  createEffect(() => {
+    props.terrain.center.x;
+    props.terrain.height;
+    props.terrain.width;
+    const edges = pointsToEdges(rectangle.getCoords(true, true));
+    setEdges(edges);
+  });
+
   onCleanup(() => {
     scene().remove(rectangle);
     document.removeEventListener("keypress", onKeyPress);
@@ -159,26 +253,74 @@ export function Terrain2dObject(props: Terrain2dObjectProps) {
 
   return (
     <>
-      <Show when={isSelected() && !isMoving()}>
-        <Index each={pointsToEdges(rectangle.getCoords(true))}>
+      <Show when={!isMoving()}>
+        <For each={edges()}>
           {(item, index) => {
             const topPadding = {
               0: -40,
               2: 40,
-            }[index];
+            }[index()];
             const leftPadding = {
               1: 40,
               3: -40,
-            }[index];
+            }[index()];
+
+            const onApplyPrimary = (value: number) => {
+              if (index() === 1 || index() === 3) {
+                const heightDiff = cmToPx(value) - rectangle.height!;
+                rectangle.set({
+                  top: rectangle.top! - heightDiff,
+                  height: cmToPx(value),
+                });
+              }
+              if (index() === 0 || index() === 2) {
+                const widthDiff = cmToPx(value) - rectangle.width!;
+                rectangle.set({
+                  left: rectangle.left! - widthDiff,
+                  width: cmToPx(value),
+                });
+              }
+              updateTerrain(props.terrain.id, {
+                center: {
+                  x: rectangle.getCenterPoint().x,
+                  y: rectangle.getCenterPoint().y,
+                },
+                width: pxToCm(rectangle.getScaledWidth() - 1),
+                height: pxToCm(rectangle.getScaledHeight() - 1),
+              });
+              scene().renderAll();
+            };
+
+            const onApplySecondary = (value: number) => {
+              if (index() === 1 || index() === 3) {
+                rectangle.height = cmToPx(value);
+              }
+              if (index() === 0 || index() === 2) {
+                rectangle.width = cmToPx(value);
+              }
+              updateTerrain(props.terrain.id, {
+                center: {
+                  x: rectangle.getCenterPoint().x,
+                  y: rectangle.getCenterPoint().y,
+                },
+                width: pxToCm(rectangle.getScaledWidth() - 1),
+                height: pxToCm(rectangle.getScaledHeight() - 1),
+              });
+              scene().renderAll();
+            };
+
             return (
               <TerrainEdgeDimension
-                edge={item()}
+                edge={item}
+                visible={isSelected()}
                 topPadding={topPadding}
                 leftPadding={leftPadding}
+                onApplyPrimary={onApplyPrimary}
+                onApplySecondary={onApplySecondary}
               />
             );
           }}
-        </Index>
+        </For>
       </Show>
     </>
   );

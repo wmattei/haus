@@ -7,7 +7,7 @@ import {
   onMount,
   useContext,
 } from "solid-js";
-import { Part, createStore } from "solid-js/store";
+import { createStore } from "solid-js/store";
 import { Schema } from "./schema";
 import { Terrain } from "./terrain";
 import { Wall } from "./wall";
@@ -39,14 +39,13 @@ type FloorPlanContextProps = {
 
 export function FloorPlanProvider(props: FloorPlanContextProps) {
   const [viewMode, setViewMode] = createSignal<"3d" | "2d">("2d");
-  const [schema, setSchema] = createStore<Schema>(new Schema([], []));
+  const [schema, setSchema] = createStore<Schema>({ terrains: [], walls: [] });
 
   onMount(() => {
     const saved = localStorage.getItem("floorPlan");
     if (saved) {
-      const loadedSchema = Schema.fromJson(saved);
+      const loadedSchema = JSON.parse(saved);
       setSchema(loadedSchema);
-      setSchema("terrains", loadedSchema.terrains);
     }
 
     const savedViewMode = localStorage.getItem("viewMode");
@@ -69,10 +68,14 @@ export function FloorPlanProvider(props: FloorPlanContextProps) {
     id: string,
     data: Partial<NonFunctionProperties<Terrain>>
   ) {
-    const index = schema.findTerrainIndex(id);
-    const newTerrain = { ...schema.terrains[index], ...data };
-    Object.setPrototypeOf(newTerrain, Terrain.prototype);
-    setSchema("terrains", index, newTerrain);
+    for (const key in data) {
+      setSchema(
+        "terrains",
+        (terrain) => terrain.id === id,
+        key as keyof Terrain,
+        data[key as keyof Terrain]!
+      );
+    }
     saveState();
   }
 

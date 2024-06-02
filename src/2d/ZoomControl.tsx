@@ -27,17 +27,21 @@ export function ZoomControl2d() {
     opt.e.preventDefault();
     opt.e.stopPropagation();
 
+    scene().fire("zoom", { zoom: z });
+
     setZoom(z / INITIAL_SCALE);
   }
 
   function onWheel(opt: fabric.IEvent<WheelEvent>) {
     if (opt.e.metaKey) {
       scene()!.relativePan({ x: -opt.e.deltaX * 2, y: 0 });
+      scene().fire("move");
       return;
     }
 
     if (opt.e.shiftKey) {
       scene()!.relativePan({ x: -opt.e.deltaX * 2, y: -opt.e.deltaY * 2 });
+      scene().fire("move");
       return;
     }
 

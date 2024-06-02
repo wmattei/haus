@@ -12,12 +12,10 @@ import {
 
 import { useFloorPlanContext } from "../floorplan/FloorplanProvider";
 import { PanControl } from "./PanControl";
+import { SelectionControl } from "./SelectionControl";
 import { Terrain2dObject } from "./Terrain";
 import { Wall2dObject } from "./Wall";
 import { ZoomControl2d } from "./ZoomControl";
-import { SelectionControl } from "./SelectionControl";
-import { ObjectType } from "../floorplan/objectType";
-import { pxToCm } from "../utils/dimensions";
 
 type SceneContext = {
   scene: Accessor<fabric.Canvas>;
@@ -35,7 +33,7 @@ type Scene2DProps = {
 export function Scene2D(props: Scene2DProps) {
   const [scene, setScene] = createSignal<fabric.Canvas>();
 
-  const { viewMode, schema, updateTerrain } = useFloorPlanContext();
+  const { viewMode, schema } = useFloorPlanContext();
 
   let canvas: HTMLCanvasElement;
 

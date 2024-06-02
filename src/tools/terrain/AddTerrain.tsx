@@ -95,9 +95,12 @@ export function AddTerrain() {
     const center = object()!.getCenterPoint();
 
     const terrainId = fabric.util.getRandomInt(0, 1000000).toString();
-    addTerrain(
-      new Terrain(terrainId, width, height, new Vertex(center.x, center.y))
-    );
+    addTerrain({
+      id: terrainId,
+      width,
+      height,
+      center: { x: center.x, y: center.y },
+    });
 
     scene().remove(object()!);
 

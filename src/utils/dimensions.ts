@@ -12,9 +12,9 @@ export function pxToCm(px: number) {
 }
 
 export function pointsToEdges(points: Array<Vertex>): Array<Edge> {
-  const edges = [];
+  const edges: Edge[] = [];
   for (let i = 0; i < points.length; i++) {
-    edges.push(new Edge(points[i], points[(i + 1) % points.length]));
+    edges.push({ start: points[i], end: points[(i + 1) % points.length] });
   }
   return edges;
 }

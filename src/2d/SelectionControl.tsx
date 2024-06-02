@@ -9,9 +9,6 @@ export function SelectionControl() {
 
   onMount(() => {
     const c = scene();
-    c.on("object:modified", (e) => {
-      c.discardActiveObject();
-    });
     c.on("mouse:down", () => {
       setMouseDownTime(Date.now());
     });
