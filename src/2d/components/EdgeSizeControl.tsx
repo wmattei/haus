@@ -24,7 +24,7 @@ export function EdgeSizeControl(props: Props) {
   return (
     <Popover position={props.position}>
       <div
-        class="flex items-center p-2"
+        class="flex items-center p-2 "
         classList={{
           "flex-col": props.direction === "vertical",
           "flex-row": props.direction === "horizontal",

@@ -13,7 +13,7 @@ import {
 import { useFloorPlanContext } from "../floorplan/FloorplanProvider";
 import { PanControl } from "./PanControl";
 import { SelectionControl } from "./SelectionControl";
-import { Terrain2dObject } from "./Terrain";
+import { Terrain2dObject } from "./terrain/TerrainObject";
 import { Wall2dObject } from "./Wall";
 import { ZoomControl2d } from "./ZoomControl";
 
