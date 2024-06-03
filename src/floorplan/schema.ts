@@ -1,7 +1,12 @@
-import { Terrain } from "./terrain";
-import { Wall } from "./wall";
+import { ObjectType } from "./objectType";
+
+export interface Object {
+  id: string;
+  objectType: ObjectType;
+  children: Array<Object>;
+  parent?: Object;
+}
 
 export type Schema = {
-  terrains: Terrain[];
-  walls: Wall[];
+  objects: Array<Object>;
 };

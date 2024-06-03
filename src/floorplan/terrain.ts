@@ -1,12 +1,29 @@
-import { Edge, getEdgeCenter } from "../edge";
+import { Edge } from "../edge";
 import { Vertex } from "../vertex";
+import { ObjectType } from "./objectType";
+import { Object } from "./schema";
 
-export type Terrain = {
-  id: string;
+export interface Terrain extends Object {
+  objectType: ObjectType.Terrain;
   width: number;
   height: number;
   center: Vertex;
-};
+}
+
+export function newTerrain(
+  center: Vertex,
+  width: number,
+  height: number
+): Terrain {
+  return {
+    id: Math.random().toString(),
+    objectType: ObjectType.Terrain,
+    center,
+    width,
+    height,
+    children: [],
+  };
+}
 
 export function getTerrainEdges(terrain: Terrain): Array<Edge> {
   return [

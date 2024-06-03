@@ -2,18 +2,18 @@ import { fabric } from "fabric";
 import { Line } from "fabric/fabric-impl";
 import { Icon } from "solid-heroicons";
 import { homeModern } from "solid-heroicons/outline";
-import { createSignal } from "solid-js";
+import { createSignal, onCleanup, onMount } from "solid-js";
 import { useSceneContext } from "../../2d/Scene";
 import { useFloorPlanContext } from "../../floorplan/FloorplanProvider";
+import { newWall } from "../../floorplan/wall";
 import { useGuidanceContext } from "../../guidance/GuidanceContext";
 import { cmToPx } from "../../utils/dimensions";
 import { Vertex } from "../../vertex";
-import { Wall } from "../../floorplan/wall";
 
 export function AddWall() {
   const { scene } = useSceneContext()!;
   const { setMessage } = useGuidanceContext()!;
-  const { addWalls } = useFloorPlanContext();
+  const { addObjects } = useFloorPlanContext();
 
   const wallThickness = cmToPx(10);
 
@@ -25,10 +25,31 @@ export function AddWall() {
     evented: false,
   });
 
+  onMount(() => {
+    document.addEventListener("keypress", onPressKey);
+  });
+
+  onCleanup(() => {
+    document.removeEventListener("keypress", onPressKey);
+  });
+
+  function onPressKey(event: KeyboardEvent) {
+    if (event.key.toLowerCase() === "w") {
+      addWall();
+    }
+  }
+
   function addWall() {
+    setMessage(
+      "Click to start drawing a wall. \n Press Enter to finish. \nPress Esc to cancel."
+    );
     const s = scene();
     s.defaultCursor = "crosshair";
     s.selection = false;
+    s.forEachObject((obj) => {
+      obj.selectable = false;
+      obj.evented = false;
+    });
 
     s.on("mouse:up", onMouseUp);
     s.on("mouse:move", onMouseMove);
@@ -48,27 +69,36 @@ export function AddWall() {
       scene().renderAll();
 
       scene().remove(object);
+
+      scene().forEachObject((obj) => {
+        obj.selectable = true;
+        obj.evented = true;
+      });
     }
 
     if (e.key === "Enter") {
       scene().remove(currentLine()!);
       setCurrentLine(null);
       setLastPoint(null);
+      setMessage(null);
 
       const lines = object.getObjects() as Line[];
-      const edges: Wall[] = lines.map((line) => ({
-        edge: {
+
+      const walls = lines.map((line) => {
+        return newWall({
           start: { x: line.x1!, y: line.y1! },
           end: { x: line.x2!, y: line.y2! },
-        },
-        height: 230,
-        thickness: 10,
-      }));
+        });
+      });
 
       scene().renderAll();
       scene().remove(object);
 
-      addWalls(edges);
+      addObjects(walls);
+      scene().forEachObject((obj) => {
+        obj.selectable = true;
+        obj.evented = true;
+      });
     }
 
     scene().defaultCursor = "default";

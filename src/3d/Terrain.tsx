@@ -1,9 +1,8 @@
-import { cmToPx, pxToCm } from "../utils/dimensions";
-import { Terrain } from "../floorplan/terrain";
-import { useScene3DContext } from "./Scene";
+import { createEffect, onCleanup } from "solid-js";
 import * as THREE from "three";
-import { createEffect, mergeProps, onCleanup, onMount } from "solid-js";
-import { reconcile } from "solid-js/store";
+import { Terrain } from "../floorplan/terrain";
+import { pxToCm } from "../utils/dimensions";
+import { useScene3DContext } from "./Scene";
 
 type Props = {
   terrain: Terrain;

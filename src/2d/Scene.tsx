@@ -11,10 +11,9 @@ import {
 } from "solid-js";
 
 import { useFloorPlanContext } from "../floorplan/FloorplanProvider";
+import { Object2D } from "./Object2d";
 import { PanControl } from "./PanControl";
 import { SelectionControl } from "./SelectionControl";
-import { Terrain2dObject } from "./terrain/TerrainObject";
-import { Wall2dObject } from "./Wall";
 import { ZoomControl2d } from "./ZoomControl";
 
 type SceneContext = {
@@ -66,10 +65,9 @@ export function Scene2D(props: Scene2DProps) {
       <ZoomControl2d />
       <PanControl />
       <SelectionControl />
-      <For each={schema.terrains}>
-        {(terrain) => <Terrain2dObject terrain={terrain} />}
+      <For each={schema.objects}>
+        {(object) => <Object2D object={object} />}
       </For>
-      <For each={schema.walls}>{(wall) => <Wall2dObject wall={wall} />}</For>
       {props.children}
       <canvas
         ref={(el) => {

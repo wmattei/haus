@@ -14,7 +14,7 @@ type Terrain2dObjectProps = {
 
 export function Terrain2dObject(props: Terrain2dObjectProps) {
   const { scene } = useSceneContext()!;
-  const { deleteTerrain, updateTerrain } = useFloorPlanContext();
+  const { deleteObject, updateObject } = useFloorPlanContext();
   const [isSelected, setIsSelected] = createSignal(false);
   const [isMoving, setIsMoving] = createSignal(false);
   const [edges, setEdges] = createSignal<Edge[]>([]);
@@ -46,7 +46,7 @@ export function Terrain2dObject(props: Terrain2dObjectProps) {
   setEdges(pointsToEdges(rectangle.getCoords(true)));
 
   rectangle.on("modified", (e) => {
-    updateTerrain(e.target!.data.id, {
+    updateObject<Terrain>(e.target!.data.id, {
       center: {
         x: e.target!.getCenterPoint().x,
         y: e.target!.getCenterPoint().y,
@@ -93,7 +93,7 @@ export function Terrain2dObject(props: Terrain2dObjectProps) {
   function onKeyPress(e: KeyboardEvent) {
     const activeObject = scene()?.getActiveObject();
     if (e.key === "Backspace" && activeObject?.data?.id === props.terrain.id) {
-      deleteTerrain(props.terrain.id);
+      deleteObject(props.terrain.id);
       scene().remove(activeObject);
       document.removeEventListener("keypress", onKeyPress);
     }
@@ -142,7 +142,7 @@ export function Terrain2dObject(props: Terrain2dObjectProps) {
                   width: cmToPx(value),
                 });
               }
-              updateTerrain(props.terrain.id, {
+              updateObject<Terrain>(props.terrain.id, {
                 center: {
                   x: rectangle.getCenterPoint().x,
                   y: rectangle.getCenterPoint().y,
@@ -160,7 +160,7 @@ export function Terrain2dObject(props: Terrain2dObjectProps) {
               if (index() === 0 || index() === 2) {
                 rectangle.width = cmToPx(value);
               }
-              updateTerrain(props.terrain.id, {
+              updateObject<Terrain>(props.terrain.id, {
                 center: {
                   x: rectangle.getCenterPoint().x,
                   y: rectangle.getCenterPoint().y,

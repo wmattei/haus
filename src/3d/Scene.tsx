@@ -3,16 +3,14 @@ import {
   For,
   JSX,
   createContext,
-  createEffect,
   createSignal,
   onMount,
   useContext,
 } from "solid-js";
 import * as THREE from "three";
-import { useFloorPlanContext } from "../floorplan/FloorplanProvider";
-import { TerrainObject } from "./Terrain";
-import { WallObject } from "./Wall";
 import Stats from "three/examples/jsm/libs/stats.module.js";
+import { useFloorPlanContext } from "../floorplan/FloorplanProvider";
+import { Object3D } from "./Object3d";
 
 type Scene3DContext = {
   scene: THREE.Scene;
@@ -133,9 +131,8 @@ export function Scene3D(props: Props) {
 
   return (
     <Scene3DContext.Provider value={{ scene, camera, renderer, onUpdate }}>
-      <For each={schema.walls}>{(wall) => <WallObject wall={wall} />}</For>
-      <For each={schema.terrains}>
-        {(terrain) => <TerrainObject terrain={terrain} />}
+      <For each={schema.objects}>
+        {(object) => <Object3D object={object} />}
       </For>
       {props.children}
       <canvas

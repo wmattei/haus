@@ -5,7 +5,7 @@ import { createSignal, createUniqueId, onCleanup, onMount } from "solid-js";
 import { useSceneContext } from "../../2d/Scene";
 import { cmToPx } from "../../utils/dimensions";
 import { useFloorPlanContext } from "../../floorplan/FloorplanProvider";
-import { Terrain } from "../../floorplan/terrain";
+import { Terrain, newTerrain } from "../../floorplan/terrain";
 import { Vertex } from "../../vertex";
 import { useGuidanceContext } from "../../guidance/GuidanceContext";
 
@@ -16,7 +16,7 @@ export function AddTerrain() {
   const [object, setObject] = createSignal<fabric.Polygon | null>(null);
 
   const { scene } = useSceneContext()!;
-  const { addTerrain } = useFloorPlanContext();
+  const { addObjects } = useFloorPlanContext();
   const { setMessage } = useGuidanceContext()!;
 
   onMount(() => {
@@ -94,13 +94,7 @@ export function AddTerrain() {
 
     const center = object()!.getCenterPoint();
 
-    const terrainId = fabric.util.getRandomInt(0, 1000000).toString();
-    addTerrain({
-      id: terrainId,
-      width,
-      height,
-      center: { x: center.x, y: center.y },
-    });
+    addObjects([newTerrain({ x: center.x, y: center.y }, width, height)]);
 
     scene().remove(object()!);
 
